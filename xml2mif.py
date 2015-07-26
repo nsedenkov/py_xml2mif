@@ -3,7 +3,7 @@
 #
 #===============================================================================
 #    Программа обработки XML-файлов Росреестра
-#    Версия альфа 0.85 от 26.07.2015
+#    Версия альфа 0.85+ от 26.07.2015 (first try create dxf)
 #    Автор Седенков Н.Б. geo.master@inbox.ru
 #    http://sourceforge.net/projects/xml2mif/
 #    Распространяется под лицензией GNU GPL
@@ -26,7 +26,11 @@ import hashlib
 from shutil import move
 import json
 from Queue import Queue
-
+# Временно на период отладки
+if path.exists(path.normpath('d:\PY\LIB\sdxf')):
+    sys.path.append(path.normpath('d:\PY\LIB\sdxf'))
+import sdxf
+    
 #================================================================================
 #
 #   Класс потока обработки
@@ -129,6 +133,11 @@ class XMLThread(Thread):
         self.PolygonStRealty = '    Pen (1,2,32896)\n    Brush (6,32896)\n'
         self.PlineStRealty = '    Pen (1,2,32896)\n'
         self.xmlVer = ('','')
+        # В дальнейшем будет просто self.dxf = Drawing()
+        self.dxf = sdxf.Drawing()
+        self.dxf.layers.append(sdxf.Layer(name="parcel",color=1))
+        self.dxf.layers.append(sdxf.Layer(name="subparcel",color=2))
+        self.dxfname = ''
         self.LOCK = RLock()
         Thread.__init__(self)
 
@@ -277,7 +286,11 @@ class XMLThread(Thread):
         self.MIFRealty.append('Data\n')
         self.MIFRealty.append('\n')
         
+    def save_dxf(self):
+        self.dxf.saveas(path.join(self.dirtosave, self.dxfname))
+        
     def save_kpt(self,ver):
+        self.save_dxf()
         self.save_one_zu()
         if ver > 7:
             f1 = open(path.join(self.dirtosave, self.MIFBlockName), 'w')
@@ -308,6 +321,7 @@ class XMLThread(Thread):
                 self.save_one_oks()
 
     def save_one_zu(self):
+        self.save_dxf()
         f1 = open(path.join(self.dirtosave, self.MIFParcelName), 'w')
         f1.writelines(self.MIFParcel)
         f1.close()
@@ -323,6 +337,7 @@ class XMLThread(Thread):
             f1.close()
             
     def save_one_oks(self):
+        self.save_dxf()
         f1 = open(path.join(self.dirtosave, self.MIFRealtyName), 'w')
         f1.writelines(self.MIFRealty)
         f1.close()
@@ -407,6 +422,7 @@ class XMLThread(Thread):
         #  для полилиний - реальное количество для вставки нужного числа строк в MID файл
         #=======================================================================
         CT = []
+        dxflst = []
         DicCatColor = {
                                 1:'15790080',
                                 2:'45056',
@@ -496,8 +512,10 @@ class XMLThread(Thread):
                                 Y = float(sblv3.get('X'))
                                 self.check_bounds(X, Y)
                                 tm1 = str(X)+' '+str(Y)+'\n'
+                                tm2 = (X, Y, 0.0)
                                 if Nm == 1: # Для объекта Parcel
                                     self.MIFParcel.append(tm1)
+                                    dxflst.append(tm2)
                                 elif (Nm == 2) and (CT[i] != 3): # Для объекта ObjectsRealty, кроме круга
                                     self.MIFRealty.append(tm1)
                                 elif Nm == 4: # Для объекта SpatialData
@@ -518,6 +536,10 @@ class XMLThread(Thread):
                                 self.check_bounds(X2, Y2)
                                 tm1 = str(X1)+' '+str(Y1)+' '+str(X2)+' '+str(Y2)+'\n'
                                 self.MIFRealty.append(tm1)
+                if len(dxflst) > 0:
+                    print(dxflst)
+                    self.dxf.append(sdxf.PolyLine(points=dxflst, layer="parcel", color=4, flag=1))
+                    del dxflst[0:len(dxflst)]
                 if (Nm == 2) and (2 in CT):
                     self.MIFRealty.append(self.PlineStRealty)
                 i+=1
@@ -576,6 +598,9 @@ class XMLThread(Thread):
         del tm1
         self.MIDParcel.append(MIDStr)
         
+    def named_dxf(self, name):
+        return name + '.dxf'
+        
     def named_kpt_files(self, modified_CN):
         self.MIFParcelName = modified_CN+'_parcels.mif'
         self.MIDParcelName = modified_CN+'_parcels.mid'
@@ -589,12 +614,14 @@ class XMLThread(Thread):
         self.MIDPointsName = modified_CN+'_points.mid'
         self.MIFRealtyName = modified_CN+'_realty.mif'
         self.MIDRealtyName = modified_CN+'_realty.mid'
+        self.dxfname = self.named_dxf(modified_CN)
         
     def named_parcel_files(self, modified_CN):
         self.MIFParcelName = modified_CN+'_parcel.mif'
         self.MIDParcelName = modified_CN+'_parcel.mid'
         self.MIFSubParcelName = modified_CN+'_subparcel.mif'
         self.MIDSubParcelName = modified_CN+'_subparcel.mid'
+        self.dxfname = self.named_dxf(modified_CN)
         
     def extract_address(self,node):
         # node - элемент с тэгом Address
