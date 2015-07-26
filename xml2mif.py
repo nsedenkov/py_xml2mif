@@ -3,7 +3,7 @@
 #
 #===============================================================================
 #    Программа обработки XML-файлов Росреестра
-#    Версия альфа 0.85 от 23.07.2015
+#    Версия альфа 0.85 от 26.07.2015
 #    Автор Седенков Н.Б. geo.master@inbox.ru
 #    http://sourceforge.net/projects/xml2mif/
 #    Распространяется под лицензией GNU GPL
@@ -1287,7 +1287,7 @@ class main:
         for x in xrange(0,len(self.DicColorMethod)):
             self.clmenu.add_command(label = self.DicColorMethod[x], command = lambda x = x: self.set_active_clmth(x))
         self.colorvar.set(self.clmenu.entrycget(0, 'label'))
-        #AutoUpdThread(self.master, self.__version__, self.__selfname__, getcwd()).start()
+        AutoUpdThread(self.master, self.__version__, self.__selfname__, getcwd()).start()
         self.master.after(1000, self.task)
         self.master.mainloop()
         
