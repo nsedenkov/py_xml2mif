@@ -75,11 +75,11 @@ class XMLThread(Thread):
                        8:'Категория не установлена'
                       }
         # Словарь - вид объекта капитального строительства
-        self.DicTRealty = {1:'-', 2:'здание', 3:'-', 4:'сооружение', 5:'объект незавершенного строительства'}
+        self.DicTRealty = {1:'-', 2:u'здание', 3:'-', 4:u'сооружение', 5:u'объект незавершенного строительства'}
         # Словарь - назначение здания
-        self.DicABuild = {1:'нежилое здание', 2:'жилой дом'}
+        self.DicABuild = {1:u'нежилое здание', 2:u'жилой дом'}
         # Словарь - характеристики сооружений
-        self.DicPName = {1:'протяженность', 2:'глубина', 3:'объем', 4:'высота', 5:'площадь', 6:'площадь застройки'}
+        self.DicPName = {1:u'протяженность', 2:u'глубина', 3:u'объем', 4:u'высота', 5:u'площадь', 6:u'площадь застройки'}
         # Словарь - обременения
         self.DicEncumb = {'022001000000':'Сервитут',
                           '022001001000':'Публичный сервитут',
@@ -138,13 +138,14 @@ class XMLThread(Thread):
         self.xmlVer = ('','')
         # В дальнейшем будет просто self.dxf = Drawing()
         self.dxf = sdxf.Drawing()
-        self.dxf.layers.append(sdxf.Layer(name="parcel",color=1))
-        self.dxf.layers.append(sdxf.Layer(name="subparcel",color=2))
-        self.dxf.layers.append(sdxf.Layer(name="block",color=3))
-        self.dxf.layers.append(sdxf.Layer(name="local",color=4))
-        self.dxf.layers.append(sdxf.Layer(name="zones",color=5))
-        self.dxf.layers.append(sdxf.Layer(name="points",color=6))
-        self.dxf.layers.append(sdxf.Layer(name="realty",color=7))
+        self.dxf.layers.append(sdxf.Layer(name="parcel",color=5))
+        self.dxf.layers.append(sdxf.Layer(name="subparcel",color=44))
+        self.dxf.layers.append(sdxf.Layer(name="block",color=74))
+        self.dxf.layers.append(sdxf.Layer(name="local",color=214))
+        self.dxf.layers.append(sdxf.Layer(name="zones",color=1))
+        self.dxf.layers.append(sdxf.Layer(name="points",color=7))
+        self.dxf.layers.append(sdxf.Layer(name="realty",color=135))
+        self.dxf.linetypes.append(sdxf.LineType(name='ACAD_ISO03W100', description='ISO dash __    __    __', elements=[30,12,-18]))
         self.dxfname = 'default.dxf'
         self.LOCK = RLock()
         Thread.__init__(self)
@@ -429,28 +430,30 @@ class XMLThread(Thread):
         #  для полигонов - всегда 1 (т.к. последующие контуры внутренние)
         #  для полилиний - реальное количество для вставки нужного числа строк в MID файл
         #=======================================================================
+        # TODO: Навести порядок в многоконтурных сооружениях
         CT = []
         dxflst = []
-        dxfprops = {} # Словарь для свойств примитива: layer, color, flag
+        entlst = []
+        dxfprops = {} # Словарь для свойств примитива: layer, color, linetype, flag
         DicCatColor = {
-                                1:'15790080',
-                                2:'45056',
-                                3:'14201087',
-                                4:'16736352',
-                                5:'9502608',
-                                6:'3175935',
-                                7:'8388736',
-                                8:'8421504'
+                                1:{'mif':'15790080','dxf':'61'}, # С/х
+                                2:{'mif':'45056','dxf':'62'}, # НП
+                                3:{'mif':'14201087','dxf':'201'}, # пром
+                                4:{'mif':'16736352','dxf':'1'}, # ос охр
+                                5:{'mif':'9502608','dxf':'81'}, # ЛФ
+                                6:{'mif':'3175935','dxf':'151'}, # ВФ
+                                7:{'mif':'8388736','dxf':'1'}, # зап
+                                8:{'mif':'8421504','dxf':'9'} # не уст
                              }
         DicStatColor = {
-                                '01':'5308240',
-                                '02':'0',
-                                '03':'0',
-                                '04':'0',
-                                '05':'0',
-                                '06':'32768',
-                                '07':'8421376',
-                                '08':'32896'
+                                '01':{'mif':'5308240','dxf':'81'}, # Р/учт
+                                '02':{'mif':'0','dxf':'1'},
+                                '03':{'mif':'0','dxf':'1'}, # Усл
+                                '04':{'mif':'0','dxf':'1'}, # Внес
+                                '05':{'mif':'0','dxf':'7'}, # Врем
+                                '06':{'mif':'32768','dxf':'92'}, # Учт
+                                '07':{'mif':'8421376','dxf':'1'}, # Снят
+                                '08':{'mif':'32896','dxf':'1'} # Аннул
                              }
         accurparam = {
                                 7:'Delta_Geopoint',
@@ -458,6 +461,7 @@ class XMLThread(Thread):
                                 9:'DeltaGeopoint'
                             }
         hatches = ('18','5')
+        linestyles = ('0','0')
         defaultcolor = '255'
         isqualify = 0 # По умолчанию считаем объект декларированным
         qlst = []
@@ -469,16 +473,28 @@ class XMLThread(Thread):
         tm1 = 'Region '+str(BCnt)+'\n'
         if Nm == 1: # Для объекта Parcel
             self.MIFParcel.append(tm1)
+            dxfprops['layer'] = 'parcel'
+            dxfprops['flag'] = 1
         elif (Nm == 2) and (not 2 in CT) and (not 3 in CT): # Для объекта ObjectsRealty - если объект - полигон
             self.MIFRealty.append(tm1)
+            dxfprops['layer'] = 'realty'
+            dxfprops['flag'] = 1
         elif Nm == 4: # Для объекта SpatialData
             self.MIFBlock.append(tm1)
+            dxfprops['layer'] = 'block'
+            dxfprops['flag'] = 1
         elif Nm == 5: # Для объекта Bounds
             self.MIFLocal.append(tm1)
+            dxfprops['layer'] = 'local'
+            dxfprops['flag'] = 1
         elif Nm == 6: # Для объекта Zone
             self.MIFZones.append(tm1)
+            dxfprops['layer'] = 'zones'
+            dxfprops['flag'] = 1
         elif Nm == 7: # Для объекта SubParcel
             self.MIFSubParcel.append(tm1)
+            dxfprops['layer'] = 'subparcel'
+            dxfprops['flag'] = 1
         for sblv1 in node:
             if sblv1.tag.endswith('Element'):
                 i = 0 # Номер контура
@@ -521,37 +537,19 @@ class XMLThread(Thread):
                                 Y = float(sblv3.get('X'))
                                 self.check_bounds(X, Y)
                                 tm1 = str(X)+' '+str(Y)+'\n'
-                                dxflst.append((X, Y, 0.0))
+                                entlst.append((X, Y))
                                 if Nm == 1: # Для объекта Parcel
                                     self.MIFParcel.append(tm1)
-                                    dxfprops['layer'] = 'parcel'
-                                    dxfprops['color'] = 1
-                                    dxfprops['flag'] = 1
                                 elif (Nm == 2) and (CT[i] != 3): # Для объекта ObjectsRealty, кроме круга
                                     self.MIFRealty.append(tm1)
-                                    dxfprops['layer'] = 'realty'
-                                    dxfprops['color'] = 7
-                                    dxfprops['flag'] = 0
                                 elif Nm == 4: # Для объекта SpatialData
                                     self.MIFBlock.append(tm1)
-                                    dxfprops['layer'] = 'block'
-                                    dxfprops['color'] = 3
-                                    dxfprops['flag'] = 1
                                 elif Nm == 5: # Для объекта Bounds
                                     self.MIFLocal.append(tm1)
-                                    dxfprops['layer'] = 'local'
-                                    dxfprops['color'] = 4
-                                    dxfprops['flag'] = 1
                                 elif Nm == 6:  # Для объекта Zones
                                     self.MIFZones.append(tm1)
-                                    dxfprops['layer'] = 'zones'
-                                    dxfprops['color'] = 5
-                                    dxfprops['flag'] = 1
                                 elif Nm == 7: # Для объекта SubParcel
                                     self.MIFSubParcel.append(tm1)
-                                    dxfprops['layer'] = 'subparcel'
-                                    dxfprops['color'] = 2
-                                    dxfprops['flag'] = 1
                             if sblv3.tag.endswith('R'): # Ветка для сооружения в форме круга
                                 rd = float(sblv3.text)
                                 X1 = X - rd
@@ -562,11 +560,9 @@ class XMLThread(Thread):
                                 self.check_bounds(X2, Y2)
                                 tm1 = str(X1)+' '+str(Y1)+' '+str(X2)+' '+str(Y2)+'\n'
                                 self.MIFRealty.append(tm1)
-                if len(dxflst) > 0:
-                    #print(dxflst)
-                    #self.dxf.append(sdxf.PolyLine(points=deepcopy(dxflst), layer=dxfprops['layer'], color=dxfprops['color'], flag=dxfprops['flag']))
-                    self.dxf.append(sdxf.PolyLine(points=deepcopy(dxflst), layer=dxfprops['layer'], flag=dxfprops['flag']))
-                    del dxflst[0:len(dxflst)]
+                if len(entlst) > 0:
+                    dxflst.append(deepcopy(entlst))
+                    del entlst[0:len(entlst)]
                 if (Nm == 2) and (2 in CT):
                     self.MIFRealty.append(self.PlineStRealty)
                 i+=1
@@ -586,10 +582,12 @@ class XMLThread(Thread):
             else:
                 if isinstance(Clr, int):
                     st = st.replace('%pattern%', hatches[isqualify])
-                    st = st.replace('%color%', DicCatColor[Clr])
+                    st = st.replace('%color%', DicCatColor[Clr]['mif'])
+                    dxfprops['color'] = DicCatColor[Clr]['dxf']
                 elif isinstance(Clr, str):
                     st = st.replace('%pattern%', hatches[isqualify])
-                    st = st.replace('%color%', DicStatColor[Clr])
+                    st = st.replace('%color%', DicStatColor[Clr]['mif'])
+                    dxfprops['color'] = DicStatColor[Clr]['dxf']
             self.MIFParcel.append(st)
         elif (Nm == 2) and (not 2 in CT): # Для объекта ObjectsRealty, если объект - полигон или эллипс
             self.MIFRealty.append(self.PolygonStRealty)
@@ -601,6 +599,20 @@ class XMLThread(Thread):
             self.MIFZones.append(self.PolygonStZones)
         elif Nm == 7: # Для объекта Zones
             self.MIFSubParcel.append(self.PolygonStSubParcel)
+        for entlst in dxflst:
+            if Nm == 1:
+                if Clr is None:
+                    if (isqualify == 0):
+                        self.dxf.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], lineType='ACAD_ISO03W100', flag=dxfprops['flag']))
+                    else:
+                        self.dxf.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], flag=dxfprops['flag']))
+                else:
+                    if (isqualify == 0):
+                        self.dxf.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], color=dxfprops['color'], lineType='ACAD_ISO03W100', flag=dxfprops['flag']))
+                    else:
+                        self.dxf.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], color=dxfprops['color'], flag=dxfprops['flag']))
+            else:
+                self.dxf.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], flag=dxfprops['flag']))
         if not 2 in CT:
             return 1
         else:
@@ -1066,10 +1078,12 @@ class XMLThread(Thread):
                                     st3 = self.DicABuild.get(int(tm1[5]))
                                 elif sblv3.tag.endswith('AssignationName'):
                                     st3 = sblv3.text
-                                    if st3 is not None:
-                                        st3 = st3.encode('utf-8')
-                                    else:
+                                    if st3 is None:
                                         st3 = '-'
+                                    #if st3 is not None:
+                                        #st3 = st3.encode('utf-8')
+                                    #else:
+                                        #st3 = '-'
                                 elif sblv3.tag.endswith('Area'): # Для здания
                                     st4 = self.DicPName.get(5)
                                     st5 = str(sblv3.text)
@@ -1082,10 +1096,13 @@ class XMLThread(Thread):
                                     st6 = self.extract_address(sblv3)
                                 elif sblv3.tag.endswith('EntitySpatial'):
                                     MIDStr = '"' + st1 + '","' + st2 + '","' + st3 + '","' + st4 + '","' + st5 + '","' + st6 + '"\n'
-                                    MIDStr = MIDStr.decode('utf-8')
+                                    #MIDStr = MIDStr.decode('utf-8')
                                     MIDStr = MIDStr.encode('cp1251')
-                                    for i in range(0,self.process_espatial(sblv3, 2)):
-                                        self.MIDRealty.append(MIDStr)
+                                    try:
+                                        for i in xrange(0,self.process_espatial(sblv3, 2)):
+                                            self.MIDRealty.append(MIDStr)
+                                    except:
+                                        pass
             if logst is not None:
                 self.correct_mif_bounds()
             return 0
