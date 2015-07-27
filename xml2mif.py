@@ -140,7 +140,12 @@ class XMLThread(Thread):
         self.dxf = sdxf.Drawing()
         self.dxf.layers.append(sdxf.Layer(name="parcel",color=1))
         self.dxf.layers.append(sdxf.Layer(name="subparcel",color=2))
-        self.dxfname = ''
+        self.dxf.layers.append(sdxf.Layer(name="block",color=3))
+        self.dxf.layers.append(sdxf.Layer(name="local",color=4))
+        self.dxf.layers.append(sdxf.Layer(name="zones",color=5))
+        self.dxf.layers.append(sdxf.Layer(name="points",color=6))
+        self.dxf.layers.append(sdxf.Layer(name="realty",color=7))
+        self.dxfname = 'default.dxf'
         self.LOCK = RLock()
         Thread.__init__(self)
 
@@ -426,6 +431,7 @@ class XMLThread(Thread):
         #=======================================================================
         CT = []
         dxflst = []
+        dxfprops = {} # Словарь для свойств примитива: layer, color, flag
         DicCatColor = {
                                 1:'15790080',
                                 2:'45056',
@@ -515,20 +521,37 @@ class XMLThread(Thread):
                                 Y = float(sblv3.get('X'))
                                 self.check_bounds(X, Y)
                                 tm1 = str(X)+' '+str(Y)+'\n'
-                                tm2 = (X, Y, 0.0)
+                                dxflst.append((X, Y, 0.0))
                                 if Nm == 1: # Для объекта Parcel
                                     self.MIFParcel.append(tm1)
-                                    dxflst.append(tm2)
+                                    dxfprops['layer'] = 'parcel'
+                                    dxfprops['color'] = 1
+                                    dxfprops['flag'] = 1
                                 elif (Nm == 2) and (CT[i] != 3): # Для объекта ObjectsRealty, кроме круга
                                     self.MIFRealty.append(tm1)
+                                    dxfprops['layer'] = 'realty'
+                                    dxfprops['color'] = 7
+                                    dxfprops['flag'] = 0
                                 elif Nm == 4: # Для объекта SpatialData
                                     self.MIFBlock.append(tm1)
+                                    dxfprops['layer'] = 'block'
+                                    dxfprops['color'] = 3
+                                    dxfprops['flag'] = 1
                                 elif Nm == 5: # Для объекта Bounds
                                     self.MIFLocal.append(tm1)
+                                    dxfprops['layer'] = 'local'
+                                    dxfprops['color'] = 4
+                                    dxfprops['flag'] = 1
                                 elif Nm == 6:  # Для объекта Zones
                                     self.MIFZones.append(tm1)
+                                    dxfprops['layer'] = 'zones'
+                                    dxfprops['color'] = 5
+                                    dxfprops['flag'] = 1
                                 elif Nm == 7: # Для объекта SubParcel
                                     self.MIFSubParcel.append(tm1)
+                                    dxfprops['layer'] = 'subparcel'
+                                    dxfprops['color'] = 2
+                                    dxfprops['flag'] = 1
                             if sblv3.tag.endswith('R'): # Ветка для сооружения в форме круга
                                 rd = float(sblv3.text)
                                 X1 = X - rd
@@ -541,7 +564,8 @@ class XMLThread(Thread):
                                 self.MIFRealty.append(tm1)
                 if len(dxflst) > 0:
                     #print(dxflst)
-                    self.dxf.append(sdxf.PolyLine(points=deepcopy(dxflst), layer="parcel", color=4, flag=1))
+                    #self.dxf.append(sdxf.PolyLine(points=deepcopy(dxflst), layer=dxfprops['layer'], color=dxfprops['color'], flag=dxfprops['flag']))
+                    self.dxf.append(sdxf.PolyLine(points=deepcopy(dxflst), layer=dxfprops['layer'], flag=dxfprops['flag']))
                     del dxflst[0:len(dxflst)]
                 if (Nm == 2) and (2 in CT):
                     self.MIFRealty.append(self.PlineStRealty)
