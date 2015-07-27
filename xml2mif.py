@@ -26,7 +26,10 @@ import hashlib
 from shutil import move
 import json
 from Queue import Queue
+from copy import deepcopy
 # Временно на период отладки
+if path.exists(path.normpath(u'd:\Проекты\PY\sdxf')):
+    sys.path.append(path.normpath(u'd:\Проекты\PY\sdxf'))
 if path.exists(path.normpath('d:\PY\LIB\sdxf')):
     sys.path.append(path.normpath('d:\PY\LIB\sdxf'))
 import sdxf
@@ -537,8 +540,8 @@ class XMLThread(Thread):
                                 tm1 = str(X1)+' '+str(Y1)+' '+str(X2)+' '+str(Y2)+'\n'
                                 self.MIFRealty.append(tm1)
                 if len(dxflst) > 0:
-                    print(dxflst)
-                    self.dxf.append(sdxf.PolyLine(points=dxflst, layer="parcel", color=4, flag=1))
+                    #print(dxflst)
+                    self.dxf.append(sdxf.PolyLine(points=deepcopy(dxflst), layer="parcel", color=4, flag=1))
                     del dxflst[0:len(dxflst)]
                 if (Nm == 2) and (2 in CT):
                     self.MIFRealty.append(self.PlineStRealty)
@@ -1314,7 +1317,7 @@ class main:
         for x in xrange(0,len(self.DicColorMethod)):
             self.clmenu.add_command(label = self.DicColorMethod[x], command = lambda x = x: self.set_active_clmth(x))
         self.colorvar.set(self.clmenu.entrycget(0, 'label'))
-        AutoUpdThread(self.master, self.__version__, self.__selfname__, getcwd()).start()
+        #AutoUpdThread(self.master, self.__version__, self.__selfname__, getcwd()).start()
         self.master.after(1000, self.task)
         self.master.mainloop()
         
