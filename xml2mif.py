@@ -36,6 +36,180 @@ import sdxf
     
 #================================================================================
 #
+#   Класс файлов mif/mid
+#
+#================================================================================
+class MIFFiles:
+    
+    def __init__(self, cnt, prefix):
+        self.miflst = []
+        self.midlst = []
+        self.mifnames = []
+        self.midnames = []
+        self.bnds = [999999999.0,999999999.0,-999999999.0,-999999999.0]
+        for x in xrange(0,cnt):
+            self.mifnames.append('-')
+            self.midnames.append('-')
+            self.miflst.append([])
+            self.miflst[x].append('Version 300\n')
+            self.miflst[x].append('Charset "WindowsCyrillic"\n')
+            self.miflst[x].append('Delimiter ","\n')
+            self.miflst[x].append('CoordSys NonEarth Units "m" Bounds (XMIN, YMIN) (XMAX, YMAX)\n')
+            self.midlst.append([])
+        self.prefix = prefix
+        __init__(self)
+        
+    def clearlists(self):
+        for x in xrange(0,len(self.miflst)):
+            del self.miflst[x][2:len(self.miflst[x])]
+            self.miflst[x].append('CoordSys NonEarth Units "m" Bounds (XMIN, YMIN) (XMAX, YMAX)\n')
+            del self.midlst[x][0:len(self.midlst[x])]
+            
+    def reset_bounds(self):
+        self.bnds = [999999999.0,999999999.0,-999999999.0,-999999999.0]
+    
+    def check_bounds(self,X,Y):
+        if X < self.bnds[0]:
+            self.bnds.pop(0)
+            self.bnds.insert(0, X)
+        if X > self.bnds[2]:
+            self.bnds.pop(2)
+            self.bnds.insert(2, X)
+        if Y < self.bnds[1]:
+            self.bnds.pop(1)
+            self.bnds.insert(1, Y)
+        if Y > self.bnds[3]:
+            self.bnds.pop(3)
+            self.bnds.insert(3, Y)
+
+    def correct_bounds(self):
+        for x in xrange(0,len(self.miflst)):
+            tm1 = self.miflst[x].pop(3)
+            tm1 = tm1.replace('XMIN', str(self.bnds[0]))
+            tm1 = tm1.replace('YMIN', str(self.bnds[1]))
+            tm1 = tm1.replace('XMAX', str(self.bnds[2]))
+            tm1 = tm1.replace('YMAX', str(self.bnds[3]))
+            self.miflst[x].insert(3, tm1)
+
+    def choosemifparcel(self, num):
+        if num < len(self.miflst):
+            self.mifnames[num] = self.prefix + '_parcel.mif'
+            self.midnames[num] = self.prefix + '_parcel.mid'
+            self.miflst[num].append('Columns 7\n')
+            self.miflst[num].append('  CadN Char(50)\n')
+            self.miflst[num].append('  Name Char(50)\n')
+            self.miflst[num].append('  Status Char(50)\n')
+            self.miflst[num].append('  Area Float\n')
+            self.miflst[num].append('  Cat Char(50)\n')
+            self.miflst[num].append('  Utilization Char(255)\n')
+            self.miflst[num].append('  Address Char(255)\n')
+            self.miflst[num].append('Data\n')
+            self.miflst[num].append('\n')
+        else:
+            raise RangeError('Miflist index out of range!')
+            
+    def choosemifsubparcel(self, num):
+        if num < len(self.miflst):
+            self.mifnames[num] = self.prefix + '_subparcel.mif'
+            self.midnames[num] = self.prefix + '_subparcel.mid'
+            self.miflst[num].append('Columns 5\n')
+            self.miflst[num].append('  CadN Char(50)\n')
+            self.miflst[num].append('  Num Char(10)\n')
+            self.miflst[num].append('  Status Char(50)\n')
+            self.miflst[num].append('  Area Float\n')
+            self.miflst[num].append('  Encumb Char(255)\n')
+            self.miflst[num].append('Data\n')
+            self.miflst[num].append('\n')
+        else:
+            raise RangeError('Miflist index out of range!')
+            
+    def choosemifblock(self, num):
+        if num < len(self.miflst):
+            self.mifnames[num] = self.prefix + '_block.mif'
+            self.midnames[num] = self.prefix + '_block.mid'
+            self.miflst[num].append('Columns 1\n')
+            self.miflst[num].append('  CadN Char(50)\n')
+            self.miflst[num].append('Data\n')
+            self.miflst[num].append('\n')
+        else:
+            raise RangeError('Miflist index out of range!')
+            
+    def choosemiflocal(self, num):
+        if num < len(self.miflst):
+            self.mifnames[num] = self.prefix + '_local.mif'
+            self.midnames[num] = self.prefix + '_local.mid'
+            self.miflst[num].append('Columns 1\n')
+            self.miflst[num].append('  Name Char(255)\n')
+            self.miflst[num].append('Data\n')
+            self.miflst[num].append('\n')
+        else:
+            raise RangeError('Miflist index out of range!')
+            
+    def choosemifzones(self,num):
+        if num < len(self.miflst):
+            self.mifnames[num] = self.prefix + '_zones.mif'
+            self.midnames[num] = self.prefix + '_zones.mid'
+            self.miflst[num].append('Columns 1\n')
+            self.miflst[num].append('  Name Char(255)\n')
+            self.miflst[num].append('Data\n')
+            self.miflst[num].append('\n')
+        else:
+            raise RangeError('Miflist index out of range!')
+            
+    def choosemifpoints(self,num):
+        if num < len(self.miflst):
+            self.mifnames[num] = self.prefix + '_points.mif'
+            self.midnames[num] = self.prefix + '_points.mid'
+            self.miflst[num].append('Columns 3\n')
+            self.miflst[num].append('  Nmb Integer\n')
+            self.miflst[num].append('  Name Char(255)\n')
+            self.miflst[num].append('  Class Char(100)\n')
+            self.miflst[num].append('Data\n')
+            self.miflst[num].append('\n')
+        else:
+            raise RangeError('Miflist index out of range!')
+            
+    def choosemifrealty(self,num):
+        if num < len(self.miflst):
+            self.mifnames[num] = self.prefix + '_realty.mif'
+            self.midnames[num] = self.prefix + '_realty.mid'
+            self.miflst[num].append('Columns 6\n')
+            self.miflst[num].append('  CadN Char(50)\n')
+            self.miflst[num].append('  ObjType Char(50)\n')
+            self.miflst[num].append('  Assign Char(100)\n')
+            self.miflst[num].append('  PType Char(25)\n')
+            self.miflst[num].append('  Parameter Char(25)\n')
+            self.miflst[num].append('  Address Char(255)\n')
+            self.miflst[num].append('Data\n')
+            self.miflst[num].append('\n')
+        else:
+            raise RangeError('Miflist index out of range!')
+            
+    def appendmifstring(self,num,string):
+        if num < len(self.miflst):
+            self.miflst[num].append(string)
+        else:
+            raise RangeError('Miflist index out of range!')
+
+    def appendmidstring(self,num,string):
+        if num < len(self.miflst):
+            self.midlst[num].append(string)
+        else:
+            raise RangeError('Miflist index out of range!')
+            
+    def savemifmid(self, dirtosave, nums):
+        # nums - кортеж вида (n1, n2, ...) - номера файлов для сохранения
+        for x in xrange(0,len(self.miflst)):
+            if x in nums:
+                f1 = open(path.join(dirtosave, self.mifnames[x]), 'w')
+                f1.writelines(self.miflst[x])
+                f1.close()
+                f1 = codecs.open(path.join(dirtosave, self.midnames[x]), 'wb')
+                f1.writelines(self.MIDParcel)
+                f1.close()
+            
+#================================================================================
+#
 #   Класс потока обработки
 #
 #================================================================================
