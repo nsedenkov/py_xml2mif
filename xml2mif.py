@@ -1173,6 +1173,8 @@ class XMLThread(Thread):
                 CtP = self.DicCat.get(int(tm2[5]))
             elif sblv3.tag.endswith('Utilization'):
                 UtP = sblv3.get('ByDoc')
+                if UtP is None:
+                    UtP = '-'
             elif sblv3.tag.endswith('ParentCadastralNumbers'):
                 for sblv4 in sblv3:
                     if sblv4.tag.endswith('CadastralNumber'):
