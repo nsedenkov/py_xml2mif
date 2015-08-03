@@ -145,7 +145,7 @@ class XMLThread(Thread):
         self.dxf.layers.append(sdxf.Layer(name="zones",color=1))
         self.dxf.layers.append(sdxf.Layer(name="points",color=7))
         self.dxf.layers.append(sdxf.Layer(name="realty",color=135))
-        self.dxf.linetypes.append(sdxf.LineType(name='ACAD_ISO03W100', description='ISO dash __    __    __', elements=[30,12,-18]))
+        self.dxf.linetypes.append(sdxf.LineType(name='ACAD_ISO03W100', description='ISO dash __    __    __', elements=[12,-18], ptnlen=30, flag=0))
         self.dxfname = 'default.dxf'
         self.LOCK = RLock()
         Thread.__init__(self)
