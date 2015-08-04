@@ -28,10 +28,10 @@ import json
 from Queue import Queue
 from copy import deepcopy
 # Временно на период отладки
-if path.exists(path.normpath(u'd:\Проекты\PY\sdxf')):
-    sys.path.append(path.normpath(u'd:\Проекты\PY\sdxf'))
 if path.exists(path.normpath('d:\PY\LIB\sdxf')):
     sys.path.append(path.normpath('d:\PY\LIB\sdxf'))
+if path.exists(path.normpath('d:\Devel\PY\sdxf')):
+    sys.path.append(path.normpath('d:\Devel\PY\sdxf'))
 import sdxf
     
 #================================================================================
@@ -145,7 +145,9 @@ class XMLThread(Thread):
         self.dxf.layers.append(sdxf.Layer(name="zones",color=1))
         self.dxf.layers.append(sdxf.Layer(name="points",color=7))
         self.dxf.layers.append(sdxf.Layer(name="realty",color=135))
-        self.dxf.linetypes.append(sdxf.LineType(name='ACAD_ISO03W100', description='ISO dash __    __    __', elements=[12,-18], ptnlen=30, flag=0))
+        self.dxf.linetypes.append(sdxf.LineType(name='ACAD_ISO02W100', 
+                                                              description='ISO dash __ __ __ __ __ __ __ __ __ __ __ __ __',
+                                                              elements=[12,-3], ptnlen=15, flag=0))
         self.dxfname = 'default.dxf'
         self.LOCK = RLock()
         Thread.__init__(self)
@@ -603,12 +605,12 @@ class XMLThread(Thread):
             if Nm == 1:
                 if Clr is None:
                     if (isqualify == 0):
-                        self.dxf.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], lineType='ACAD_ISO03W100', flag=dxfprops['flag']))
+                        self.dxf.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], lineType='ACAD_ISO02W100', flag=dxfprops['flag']))
                     else:
                         self.dxf.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], flag=dxfprops['flag']))
                 else:
                     if (isqualify == 0):
-                        self.dxf.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], color=dxfprops['color'], lineType='ACAD_ISO03W100', flag=dxfprops['flag']))
+                        self.dxf.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], color=dxfprops['color'], lineType='ACAD_ISO02W100', flag=dxfprops['flag']))
                     else:
                         self.dxf.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], color=dxfprops['color'], flag=dxfprops['flag']))
             else:
