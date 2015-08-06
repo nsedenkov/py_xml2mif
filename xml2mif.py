@@ -32,6 +32,8 @@ if path.exists(path.normpath('d:\PY\LIB\sdxf')):
     sys.path.append(path.normpath('d:\PY\LIB\sdxf'))
 if path.exists(path.normpath('d:\Devel\PY\sdxf')):
     sys.path.append(path.normpath('d:\Devel\PY\sdxf'))
+if path.exists(path.normpath('/home/jesus/Devel/PY/sdxf')):
+    sys.path.append(path.normpath('/home/jesus/Devel/PY/sdxf'))
 import sdxf
     
 #================================================================================
@@ -477,10 +479,12 @@ class XMLThread(Thread):
             self.MIFParcel.append(tm1)
             dxfprops['layer'] = 'parcel'
             dxfprops['flag'] = 1
-        elif (Nm == 2) and (not 2 in CT) and (not 3 in CT): # Для объекта ObjectsRealty - если объект - полигон
-            self.MIFRealty.append(tm1)
+        elif (Nm == 2): # Для объекта ObjectsRealty
             dxfprops['layer'] = 'realty'
-            dxfprops['flag'] = 1
+            dxfprops['flag'] = 0
+            if (not 2 in CT) and (not 3 in CT):  # если объект - полигон
+                self.MIFRealty.append(tm1)
+                dxfprops['flag'] = 1
         elif Nm == 4: # Для объекта SpatialData
             self.MIFBlock.append(tm1)
             dxfprops['layer'] = 'block'
@@ -504,13 +508,6 @@ class XMLThread(Thread):
                 for sblv2 in sblv1:
                     if sblv2.tag.endswith('Unit'):
                         DCnt+=1
-
-#                if (CT[i] != 2) and (CT[i] != 3):
-#                   tm1 = '  '+str(DCnt)+'\n'
-#                elif CT[i] != 3:
-#                    tm1 = 'Pline '+str(DCnt)+'\n'
-#                else:
-#                    tm1 = 'Ellipse '
                 if CT[i] == 1:
                     tm1 = '  '+str(DCnt)+'\n'
                 elif CT[i] == 2:
