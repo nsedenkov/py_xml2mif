@@ -986,11 +986,12 @@ class XMLThread(Thread):
                                         for sblv5 in sblv4:
                                             if sblv5.tag.endswith('Description'):
                                                 NmL = sblv5.text
+                                                if NmL is None:
+                                                    NmL = '-'
                                                 tm1 = NmL.encode('utf-8')
-                                                tm2 = tm1.decode('utf-8')
-                                                NmL = tm2.encode('cp1251')
+                                                tm1 = tm1.decode('utf-8')
+                                                NmL = tm1.encode('cp1251')
                                                 del tm1
-                                                del tm2
                                                 self.MIDLocal.append('"'+NmL+'"\n')
                                             elif sblv5.tag.endswith('Boundaries'):
                                                 for sblv6 in sblv5:
@@ -1004,11 +1005,17 @@ class XMLThread(Thread):
                                     if sblv4.tag.endswith('Zone'):
                                         for sblv5 in sblv4:
                                             if sblv5.tag.endswith('Description'):
-                                                tm1 = '"'+sblv5.text+'"\n'
-                                                tm2 = tm1.encode('cp1251')
+                                                try:
+                                                    tm1 = sblv5.text
+                                                except:
+                                                    # Для пустого тэга Description - бывает и так
+                                                    pass
+                                                if tm1 is None: 
+                                                    tm1 = '-'
+                                                tm1 = '"'+tm1+'"\n'
+                                                tm1 = tm1.encode('cp1251')
                                                 self.MIDZones.append(tm2)
                                                 del tm1
-                                                del tm2
                                             elif sblv5.tag.endswith('EntitySpatial'):
                                                 self.process_espatial(sblv5, 6)
                             # Пункты ОМС
