@@ -1014,7 +1014,7 @@ class XMLThread(Thread):
                                                     tm1 = '-'
                                                 tm1 = '"'+tm1+'"\n'
                                                 tm1 = tm1.encode('cp1251')
-                                                self.MIDZones.append(tm2)
+                                                self.MIDZones.append(tm1)
                                                 del tm1
                                             elif sblv5.tag.endswith('EntitySpatial'):
                                                 self.process_espatial(sblv5, 6)
