@@ -144,6 +144,11 @@ class XMLThread(Thread):
                                                               description='ISO dash __ __ __ __ __ __ __ __ __ __ __ __ __',
                                                               elements=[12,-3], ptnlen=15, flag=0))
         self.dxfname = 'default.dxf'
+        # Префикс имени блока
+        self.b_prf = hashlib.md5(open(self.xmlname, 'rb').read()).hexdigest()
+        self.b_prf = self.b_prf[0:len(self.b_prf):3]
+        # ID блока в пределах чертежа
+        self.b_id = 0
         self.LOCK = RLock()
         Thread.__init__(self)
 
@@ -407,7 +412,7 @@ class XMLThread(Thread):
         else:
             return 3
         
-    def process_espatial(self,node,Nm,Clr=None,ver=9):
+    def process_espatial(self,node,Nm,blk=None,Clr=None,ver=9):
         #=======================================================================
         #  node - элемент XML с тэгом EntitySpatial
         #  Nm - порядковый номер группы объектов:
@@ -419,6 +424,7 @@ class XMLThread(Thread):
         #       5 - Bounds
         #       6 - Zones
         #       7 - SubParcels
+        #       blk - блок dxf
         #  Clr - признак раскраски участков:
         #            - если integer - раскрашивать по категориям земель
         #            - если строка - раскрашивать по статусу участка
@@ -595,16 +601,31 @@ class XMLThread(Thread):
             if Nm == 1:
                 if Clr is None:
                     if (isqualify == 0):
-                        self.dxf.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], lineType='ACAD_ISO02W100', flag=dxfprops['flag']))
+                        if blk is not None:
+                            blk.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], lineType='ACAD_ISO02W100', flag=dxfprops['flag']))
+                        else:
+                            self.dxf.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], lineType='ACAD_ISO02W100', flag=dxfprops['flag']))
                     else:
-                        self.dxf.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], flag=dxfprops['flag']))
+                        if blk is not None:
+                            blk.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], flag=dxfprops['flag']))
+                        else:
+                            self.dxf.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], flag=dxfprops['flag']))
                 else:
                     if (isqualify == 0):
-                        self.dxf.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], color=dxfprops['color'], lineType='ACAD_ISO02W100', flag=dxfprops['flag']))
+                        if blk is not None:
+                            blk.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], color=dxfprops['color'], lineType='ACAD_ISO02W100', flag=dxfprops['flag']))
+                        else:
+                            self.dxf.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], color=dxfprops['color'], lineType='ACAD_ISO02W100', flag=dxfprops['flag']))
                     else:
-                        self.dxf.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], color=dxfprops['color'], flag=dxfprops['flag']))
+                        if blk is not None:
+                            blk.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], color=dxfprops['color'], flag=dxfprops['flag']))
+                        else:
+                            self.dxf.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], color=dxfprops['color'], flag=dxfprops['flag']))
             else:
-                self.dxf.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], flag=dxfprops['flag']))
+                if blk is not None:
+                    blk.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], flag=dxfprops['flag']))
+                else:
+                    self.dxf.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], flag=dxfprops['flag']))
         if not 2 in CT:
             return 1
         else:
@@ -1140,6 +1161,7 @@ class XMLThread(Thread):
         #       2 - КПЗУ версии 5
         #       3 - КПТ версии 9
         #=======================================================================
+        isgeodata = False
         CNP = node.get('CadastralNumber')
         self.LOCK.acquire()
         if mode == 1:
@@ -1159,6 +1181,9 @@ class XMLThread(Thread):
         AdP = '-'
         tm1 = node.get('State')
         StP = self.DicState.get(tm1)
+        b_name = self.b_prf + str(self.b_id)
+        self.b_id += 1
+        blk = sdxf.Block(b_name)
         for sblv3 in node:
             if sblv3.tag.endswith('CadastralBlock'):
                 CNCB = sblv3.text
@@ -1187,6 +1212,7 @@ class XMLThread(Thread):
             #   Многоконтурные
             #=======================
             elif sblv3.tag.endswith('Contours'):
+                isgeodata = True
                 CtCnt = 0
                 for sblv4 in sblv3:
                     if sblv4.tag.endswith('Contour'):
@@ -1197,26 +1223,27 @@ class XMLThread(Thread):
                         for sblv5 in sblv4:
                             if sblv5.tag.endswith('EntitySpatial'):
                                 if self.colormode == 0:
-                                    self.process_espatial(sblv5, 1)
+                                    self.process_espatial(sblv5, 1, blk)
                                 elif self.colormode == 1:
-                                    self.process_espatial(sblv5, 1, int(tm2[5]))
+                                    self.process_espatial(sblv5, 1, blk, int(tm2[5]))
                                 elif self.colormode == 2:
-                                    self.process_espatial(sblv5, 1, tm1)
+                                    self.process_espatial(sblv5, 1, blk, tm1)
             #===================================
             #   Одноконтурные
             #===================================
             elif sblv3.tag.endswith('EntitySpatial'):
+                isgeodata = True
                 if PCNP != '-':
                     CNP = PCNP + '(' + CNP + ')'
                 A = (CNP,NmP,StP,str(ArP),CtP,UtP,AdP)
                 self.add_mid_str(A)
                 del A
                 if self.colormode == 0:
-                    self.process_espatial(sblv3, 1)
+                    self.process_espatial(sblv3, 1, blk)
                 elif self.colormode == 1:
-                    self.process_espatial(sblv3, 1, int(tm2[5]))
+                    self.process_espatial(sblv3, 1, blk, int(tm2[5]))
                 elif self.colormode == 2:
-                    self.process_espatial(sblv3, 1, tm1)
+                    self.process_espatial(sblv3, 1, blk, tm1)
             #===================================
             #   Части участков
             #===================================
@@ -1237,13 +1264,17 @@ class XMLThread(Thread):
                                         if TySP is None:
                                             TySP = 'неизвестный код обременения'
                             elif sblv5.tag.endswith('EntitySpatial'):
-                                self.process_espatial(sblv5, 7)
+                                isgeodata = True
+                                self.process_espatial(sblv5, 7, blk)
                                 MIDStr = '"'+CNP+'","'+NumSP+'","'+StSP+'",'+ArSP+',"'+TySP+'"\n'
                                 MIDStr = MIDStr.decode('utf-8')
                                 MIDStr = MIDStr.encode('cp1251')
                                 self.MIDSubParcel.append(MIDStr)
         if mode != 3:
             self.correct_mif_bounds()
+        if isgeodata:
+            self.dxf.blocks.append(blk)
+            self.dxf.append(sdxf.Insert(b_name, point=(0,0,0)))
         return 0
 
     def dxf_layers(self, prefix):
@@ -1254,6 +1285,10 @@ class XMLThread(Thread):
         self.dxf.layers.append(sdxf.Layer(name=prefix+"_zones",color=1))
         self.dxf.layers.append(sdxf.Layer(name=prefix+"_points",color=7))
         self.dxf.layers.append(sdxf.Layer(name=prefix+"_realty",color=135))
+        
+    def gen_blk_id(self):
+        for x in xrange(0,999999999):
+            yield x
 
 #==============================================================================
 #
