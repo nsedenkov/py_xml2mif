@@ -412,7 +412,8 @@ class XMLThread(Thread):
         else:
             return 3
         
-    def process_espatial(self,node,Nm,blk=None,Clr=None,ver=9):
+    #def process_espatial(self,node,Nm,blk=None,Clr=None,ver=9, **kwargs):
+    def process_espatial(self, node, Nm, **kwargs):
         #=======================================================================
         #  node - элемент XML с тэгом EntitySpatial
         #  Nm - порядковый номер группы объектов:
@@ -424,16 +425,31 @@ class XMLThread(Thread):
         #       5 - Bounds
         #       6 - Zones
         #       7 - SubParcels
-        #       blk - блок dxf
+        #  в kwargs:
+        #  blk - блок dxf
         #  Clr - признак раскраски участков:
         #            - если integer - раскрашивать по категориям земель
         #            - если строка - раскрашивать по статусу участка
         #  ver - признак обратной совместимости с 8 версией КПТ - параметр погрешности называется Delta_Geopoint
+        #  cnp - кадастровый номер
         #  Возвращаемое значение - к-во элементов контура
         #  для полигонов - всегда 1 (т.к. последующие контуры внутренние)
         #  для полилиний - реальное количество для вставки нужного числа строк в MID файл
         #=======================================================================
         # TODO: Навести порядок в многоконтурных сооружениях
+        blk = None
+        Clr = None
+        ver = 9
+        cnp = '-'
+        for key in kwargs:
+            if key == 'blk':
+                blk = kwargs['blk']
+            elif key == 'Clr':
+                Clr = kwargs['Clr']
+            elif key == 'ver':
+                ver = kwargs['ver']
+            elif key == 'cnp':
+                cnp = kwargs['cnp']
         CT = []
         dxflst = []
         entlst = []
@@ -603,27 +619,32 @@ class XMLThread(Thread):
                     if (isqualify == 0):
                         if blk is not None:
                             blk.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], lineType='ACAD_ISO02W100', flag=dxfprops['flag']))
+                            blk.append(sdxf.Text(text=cnp, point=self.polygon_mass_center(entlst), height=5, layer=dxfprops['layer']))
                         else:
                             self.dxf.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], lineType='ACAD_ISO02W100', flag=dxfprops['flag']))
                     else:
                         if blk is not None:
                             blk.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], flag=dxfprops['flag']))
+                            blk.append(sdxf.Text(text=cnp, point=self.polygon_mass_center(entlst), height=5, layer=dxfprops['layer']))
                         else:
                             self.dxf.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], flag=dxfprops['flag']))
                 else:
                     if (isqualify == 0):
                         if blk is not None:
                             blk.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], color=dxfprops['color'], lineType='ACAD_ISO02W100', flag=dxfprops['flag']))
+                            blk.append(sdxf.Text(text=cnp, point=self.polygon_mass_center(entlst), height=5, layer=dxfprops['layer'], color=dxfprops['color']))
                         else:
                             self.dxf.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], color=dxfprops['color'], lineType='ACAD_ISO02W100', flag=dxfprops['flag']))
                     else:
                         if blk is not None:
                             blk.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], color=dxfprops['color'], flag=dxfprops['flag']))
+                            blk.append(sdxf.Text(text=cnp, point=self.polygon_mass_center(entlst), height=5, layer=dxfprops['layer'], color=dxfprops['color']))
                         else:
                             self.dxf.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], color=dxfprops['color'], flag=dxfprops['flag']))
             else:
                 if blk is not None:
                     blk.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], flag=dxfprops['flag']))
+                    blk.append(sdxf.Text(text=cnp, point=self.polygon_mass_center(entlst), height=5, layer=dxfprops['layer']))
                 else:
                     self.dxf.append(sdxf.PolyLine(points=deepcopy(entlst), layer=dxfprops['layer'], flag=dxfprops['flag']))
         if not 2 in CT:
@@ -1104,10 +1125,6 @@ class XMLThread(Thread):
                                     st3 = sblv3.text
                                     if st3 is None:
                                         st3 = '-'
-                                    #if st3 is not None:
-                                        #st3 = st3.encode('utf-8')
-                                    #else:
-                                        #st3 = '-'
                                 elif sblv3.tag.endswith('Area'): # Для здания
                                     st4 = self.DicPName.get(5)
                                     st5 = str(sblv3.text)
@@ -1223,11 +1240,11 @@ class XMLThread(Thread):
                         for sblv5 in sblv4:
                             if sblv5.tag.endswith('EntitySpatial'):
                                 if self.colormode == 0:
-                                    self.process_espatial(sblv5, 1, blk)
+                                    self.process_espatial(sblv5, 1, blk=blk, cnp=CNP+'('+str(CtCnt)+')')
                                 elif self.colormode == 1:
-                                    self.process_espatial(sblv5, 1, blk, int(tm2[5]))
+                                    self.process_espatial(sblv5, 1, blk=blk, Clr=int(tm2[5]), cnp=CNP+'('+str(CtCnt)+')')
                                 elif self.colormode == 2:
-                                    self.process_espatial(sblv5, 1, blk, tm1)
+                                    self.process_espatial(sblv5, 1, blk=blk, Clr=tm1, cnp=CNP+'('+str(CtCnt)+')')
             #===================================
             #   Одноконтурные
             #===================================
@@ -1239,11 +1256,11 @@ class XMLThread(Thread):
                 self.add_mid_str(A)
                 del A
                 if self.colormode == 0:
-                    self.process_espatial(sblv3, 1, blk)
+                    self.process_espatial(sblv3, 1, blk=blk, cnp=CNP)
                 elif self.colormode == 1:
-                    self.process_espatial(sblv3, 1, blk, int(tm2[5]))
+                    self.process_espatial(sblv3, 1, blk=blk, Clr=int(tm2[5]), cnp=CNP)
                 elif self.colormode == 2:
-                    self.process_espatial(sblv3, 1, blk, tm1)
+                    self.process_espatial(sblv3, 1, blk=blk, Clr=tm1, cnp=CNP)
             #===================================
             #   Части участков
             #===================================
@@ -1265,7 +1282,7 @@ class XMLThread(Thread):
                                             TySP = 'неизвестный код обременения'
                             elif sblv5.tag.endswith('EntitySpatial'):
                                 isgeodata = True
-                                self.process_espatial(sblv5, 7, blk)
+                                self.process_espatial(sblv5, 7, blk=blk)
                                 MIDStr = '"'+CNP+'","'+NumSP+'","'+StSP+'",'+ArSP+',"'+TySP+'"\n'
                                 MIDStr = MIDStr.decode('utf-8')
                                 MIDStr = MIDStr.encode('cp1251')
@@ -1286,9 +1303,17 @@ class XMLThread(Thread):
         self.dxf.layers.append(sdxf.Layer(name=prefix+"_points",color=7))
         self.dxf.layers.append(sdxf.Layer(name=prefix+"_realty",color=135))
         
-    def gen_blk_id(self):
-        for x in xrange(0,999999999):
-            yield x
+    def polygon_mass_center(self, lxy):
+        # на вход - список вида [(x,y), (x,y), .. (x,y)]
+        # на выходе кортеж (x,y)
+        x = 0.0
+        y = 0.0
+        for i in xrange(0,len(lxy)):
+            x += lxy[i][0]
+            y += lxy[i][1]
+        x = x / len(lxy)
+        y = y / len(lxy)
+        return (x, y)
 
 #==============================================================================
 #
