@@ -140,13 +140,6 @@ class XMLThread(Thread):
         self.xmlVer = ('','')
         # В дальнейшем будет просто self.dxf = Drawing()
         self.dxf = sdxf.Drawing()
-        self.dxf.layers.append(sdxf.Layer(name="parcel",color=5))
-        self.dxf.layers.append(sdxf.Layer(name="subparcel",color=44))
-        self.dxf.layers.append(sdxf.Layer(name="block",color=74))
-        self.dxf.layers.append(sdxf.Layer(name="local",color=214))
-        self.dxf.layers.append(sdxf.Layer(name="zones",color=1))
-        self.dxf.layers.append(sdxf.Layer(name="points",color=7))
-        self.dxf.layers.append(sdxf.Layer(name="realty",color=135))
         self.dxf.linetypes.append(sdxf.LineType(name='ACAD_ISO02W100', 
                                                               description='ISO dash __ __ __ __ __ __ __ __ __ __ __ __ __',
                                                               elements=[12,-3], ptnlen=15, flag=0))
@@ -477,29 +470,29 @@ class XMLThread(Thread):
         tm1 = 'Region '+str(BCnt)+'\n'
         if Nm == 1: # Для объекта Parcel
             self.MIFParcel.append(tm1)
-            dxfprops['layer'] = 'parcel'
+            dxfprops['layer'] = self.dxf.layers[1].name
             dxfprops['flag'] = 1
         elif (Nm == 2): # Для объекта ObjectsRealty
-            dxfprops['layer'] = 'realty'
+            dxfprops['layer'] = self.dxf.layers[7].name
             dxfprops['flag'] = 0
             if (not 2 in CT) and (not 3 in CT):  # если объект - полигон
                 self.MIFRealty.append(tm1)
                 dxfprops['flag'] = 1
         elif Nm == 4: # Для объекта SpatialData
             self.MIFBlock.append(tm1)
-            dxfprops['layer'] = 'block'
+            dxfprops['layer'] = self.dxf.layers[3].name
             dxfprops['flag'] = 1
         elif Nm == 5: # Для объекта Bounds
             self.MIFLocal.append(tm1)
-            dxfprops['layer'] = 'local'
+            dxfprops['layer'] = self.dxf.layers[4].name
             dxfprops['flag'] = 1
         elif Nm == 6: # Для объекта Zone
             self.MIFZones.append(tm1)
-            dxfprops['layer'] = 'zones'
+            dxfprops['layer'] = self.dxf.layers[5].name
             dxfprops['flag'] = 1
         elif Nm == 7: # Для объекта SubParcel
             self.MIFSubParcel.append(tm1)
-            dxfprops['layer'] = 'subparcel'
+            dxfprops['layer'] = self.dxf.layers[2].name
             dxfprops['flag'] = 1
         for sblv1 in node:
             if sblv1.tag.endswith('Element'):
@@ -729,6 +722,7 @@ class XMLThread(Thread):
                                                                         self.master.txt1.insert(END, 'КПТ версии 7. Кадастровый квартал '+CNCB+'\n')
                                                                         self.LOCK.release()
                                                                         self.named_kpt_files(CNCB.replace(':', '_'))
+                                                                        self.dxf_layers(CNCB.replace(':', '_'))
                                                                         for sblv9 in sblv8:
                                                                             if sblv9.tag.endswith('Parcels'):
                                                                                 for sblv10 in sblv9:
@@ -819,6 +813,7 @@ class XMLThread(Thread):
                                 self.master.txt1.insert(END, 'КПТ версии 8. Кадастровый квартал '+CNCB+'\n')
                                 self.LOCK.release()
                                 self.named_kpt_files(CNCB.replace(':', '_'))
+                                self.dxf_layers(CNCB.replace(':', '_'))
                                 for sblv4 in sblv3:
                                     # Земельные участки
                                     if sblv4.tag.endswith('Parcels'):
@@ -968,6 +963,7 @@ class XMLThread(Thread):
                         self.master.txt1.insert(END, 'КПТ версии 9. Кадастровый квартал '+CNCB+'\n')
                         self.LOCK.release()
                         self.named_kpt_files(CNCB.replace(':', '_'))
+                        self.dxf_layers(CNCB.replace(':', '_'))
                         for sblv3 in sblv2:
                             if sblv3.tag.endswith('Parcels'):
                                 for sblv4 in sblv3:
@@ -1071,6 +1067,7 @@ class XMLThread(Thread):
                                 CNP_ = st1.replace(':', '_')
                                 self.MIFRealtyName = CNP_+'_realty.mif'
                                 self.MIDRealtyName = CNP_+'_realty.mid'
+                                self.dxf_layers(CNP_)
                             for sblv3 in sblv2:
                                 if sblv3.tag.endswith('ObjectType'):
                                     tm1 = bytes(sblv3.text)
@@ -1152,6 +1149,7 @@ class XMLThread(Thread):
         self.LOCK.release()
         if mode != 3:
             self.named_parcel_files(CNP.replace(':', '_'))
+            self.dxf_layers(CNP.replace(':', '_'))
         PCNP = '-'
         NmP = '-'
         StP = '-'
@@ -1247,6 +1245,15 @@ class XMLThread(Thread):
         if mode != 3:
             self.correct_mif_bounds()
         return 0
+
+    def dxf_layers(self, prefix):
+        self.dxf.layers.append(sdxf.Layer(name=prefix+"_parcel",color=5))
+        self.dxf.layers.append(sdxf.Layer(name=prefix+"_subparcel",color=44))
+        self.dxf.layers.append(sdxf.Layer(name=prefix+"_block",color=74))
+        self.dxf.layers.append(sdxf.Layer(name=prefix+"_local",color=214))
+        self.dxf.layers.append(sdxf.Layer(name=prefix+"_zones",color=1))
+        self.dxf.layers.append(sdxf.Layer(name=prefix+"_points",color=7))
+        self.dxf.layers.append(sdxf.Layer(name=prefix+"_realty",color=135))
 
 #==============================================================================
 #
