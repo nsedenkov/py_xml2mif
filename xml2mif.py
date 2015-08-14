@@ -748,15 +748,15 @@ class XMLThread(Thread):
         self.MIFRealty.pop(3)
         self.MIFRealty.insert(3, tm1)
         
-    def new_block(self):
+    def new_block(self, lay='0'):
         self.b_id += 1
-        blk = sdxf.Block(self.b_prf + str(self.b_id))
+        blk = sdxf.Block(self.b_prf + str(self.b_id), layer=lay)
         return blk
         
     def ins_block(self, blk):
         if self.dxf is not None:
             self.dxf.blocks.append(blk)
-            self.dxf.append(sdxf.Insert(blk.name, point=(0,0,0)))
+            self.dxf.append(sdxf.Insert(blk.name, point=(0,0,0), layer=blk.layer))
         
     def kpt_v7(self,node):
         for sblv1 in node:
@@ -828,7 +828,7 @@ class XMLThread(Thread):
                                                                                             #=======================
                                                                                             elif sblv11.tag.endswith('Contours'):
                                                                                                 CtCnt = 0
-                                                                                                blk = self.new_block()
+                                                                                                blk = self.new_block(lay=self.dxf.layers[1].name)
                                                                                                 for sblv12 in sblv11:
                                                                                                     if sblv12.tag.endswith('Contour'):
                                                                                                         CtCnt+=1
@@ -853,7 +853,7 @@ class XMLThread(Thread):
                                                                                                 A = (CNP,NmP,StP,str(ArP),CtP,UtP,AdP)
                                                                                                 self.add_mid_str(A)
                                                                                                 del A
-                                                                                                blk = self.new_block()
+                                                                                                blk = self.new_block(lay=self.dxf.layers[1].name)
                                                                                                 if self.colormode == 0:
                                                                                                     self.process_espatial(sblv11, 1, ver=7, blk=blk, cnp=CNP)
                                                                                                 elif self.colormode == 1:
@@ -921,7 +921,7 @@ class XMLThread(Thread):
                                                     #=======================
                                                     elif sblv6.tag.endswith('Contours'):
                                                         CtCnt = 0
-                                                        blk = self.new_block()
+                                                        blk = self.new_block(lay=self.dxf.layers[1].name)
                                                         for sblv7 in sblv6:
                                                             if sblv7.tag.endswith('Contour'):
                                                                 CtCnt+=1
@@ -946,7 +946,7 @@ class XMLThread(Thread):
                                                         A = (CNP,NmP,StP,str(ArP),CtP,UtP,AdP)
                                                         self.add_mid_str(A)
                                                         del A
-                                                        blk = self.new_block()
+                                                        blk = self.new_block(lay=self.dxf.layers[1].name)
                                                         if self.colormode == 0:
                                                             self.process_espatial(sblv6, 1, ver=8, blk=blk, cnp=CNP)
                                                         elif self.colormode == 1:
@@ -958,7 +958,7 @@ class XMLThread(Thread):
                                     elif sblv4.tag.endswith('SpatialData'):
                                         for sblv5 in sblv4:
                                             if sblv5.tag.endswith('Entity_Spatial'):
-                                                blk = self.new_block()
+                                                blk = self.new_block(lay=self.dxf.layers[3].name)
                                                 self.process_espatial(sblv5, 4, blk=blk, cnp=CNCB)
                                                 self.MIDBlock.append('"'+CNCB+'"\n')
                                                 self.ins_block(blk)
@@ -982,7 +982,7 @@ class XMLThread(Thread):
                                                             if sblv7.tag.endswith('Boundary'):
                                                                 for sblv8 in sblv7:
                                                                     if sblv8.tag.endswith('Entity_Spatial'):
-                                                                        blk = self.new_block()
+                                                                        blk = self.new_block(lay=self.dxf.layers[4].name)
                                                                         self.process_espatial(sblv8, 5, blk=blk, cnp=NmL)
                                                                         self.ins_block(blk)
                                     # Пункты ОМС
@@ -1019,7 +1019,7 @@ class XMLThread(Thread):
                                                         self.MIDZones.append(tm1)
                                                         del tm1
                                                     elif sblv6.tag.endswith('Entity_Spatial'):
-                                                        blk = self.new_block()
+                                                        blk = self.new_block(lay=self.dxf.layers[5].name)
                                                         self.process_espatial(sblv6, 6, blk=blk, cnp=tm1)
                                                         self.ins_block(blk)
                                     
@@ -1046,7 +1046,7 @@ class XMLThread(Thread):
                             elif sblv3.tag.endswith('SpatialData'):
                                 for sblv4 in sblv3:
                                     if sblv4.tag.endswith('EntitySpatial'):
-                                        blk = self.new_block()
+                                        blk = self.new_block(lay=self.dxf.layers[3].name)
                                         self.process_espatial(sblv4, 4, blk=blk, cnp=CNCB)
                                         self.MIDBlock.append('"'+CNCB+'"\n')
                                         self.ins_block(blk)
@@ -1069,7 +1069,7 @@ class XMLThread(Thread):
                                                     if sblv6.tag.endswith('Boundary'):
                                                         for sblv7 in sblv6:
                                                             if sblv7.tag.endswith('EntitySpatial'):
-                                                                blk = self.new_block()
+                                                                blk = self.new_block(lay=self.dxf.layers[4].name)
                                                                 self.process_espatial(sblv7, 5, blk=blk, cnp=NmL)
                                                                 self.ins_block(blk)
                             # Зоны с особыми условиями
@@ -1090,7 +1090,7 @@ class XMLThread(Thread):
                                                 self.MIDZones.append(tm1)
                                                 del tm1
                                             elif sblv5.tag.endswith('EntitySpatial'):
-                                                blk = self.new_block()
+                                                blk = self.new_block(lay=self.dxf.layers[5].name)
                                                 self.process_espatial(sblv5, 6, blk=blk)
                                                 self.ins_block(blk)
                             # Пункты ОМС
@@ -1141,7 +1141,7 @@ class XMLThread(Thread):
                 if sblv1.tag.endswith('Realty'):
                     for sblv2 in sblv1:
                         if sblv2.tag.endswith('Building') or sblv2.tag.endswith('Uncompleted') or sblv2.tag.endswith('Construction'):
-                            blk = self.new_block()
+                            blk = self.new_block(lay=self.dxf.layers[7].name)
                             st1 = sblv2.get('CadastralNumber')
                             if logst is not None:
                                 CNP_ = st1.replace(':', '_')
@@ -1236,7 +1236,7 @@ class XMLThread(Thread):
         AdP = '-'
         tm1 = node.get('State')
         StP = self.DicState.get(tm1)
-        blk = self.new_block()
+        blk = self.new_block(lay=self.dxf.layers[1].name)
         for sblv3 in node:
             if sblv3.tag.endswith('CadastralBlock'):
                 CNCB = sblv3.text
