@@ -1298,6 +1298,25 @@ class XMLThread(Thread):
                 elif self.colormode == 2:
                     self.process_espatial(sblv3, 1, blk=blk, Clr=tm1, cnp=CNP)
             #===================================
+            #   Единое землепользование
+            #===================================
+            elif sblv3.tag.endswith('CompositionEZ'):
+                isgeodata = True
+                for sblv4 in sblv3:
+                    if sblv4.tag.endswith('EntryParcel'):
+                        CNObsb = CNP + '(' + sblv4.get('CadastralNumber') + ')'
+                        A = (CNObsb, NmP,StP,str(ArP),CtP,UtP,AdP)
+                        for sblv5 in sblv4:
+                            if sblv5.tag.endswith('EntitySpatial'):
+                                self.add_mid_str(A)
+                                del A
+                                if self.colormode == 0:
+                                    self.process_espatial(sblv5, 1, blk=blk, cnp=CNObsb)
+                                elif self.colormode == 1:
+                                    self.process_espatial(sblv5, 1, blk=blk, Clr=int(tm2[5]), cnp=CNObsb)
+                                elif self.colormode == 2:
+                                    self.process_espatial(sblv5, 1, blk=blk, Clr=tm1, cnp=CNObsb)
+            #===================================
             #   Части участков
             #===================================
             elif sblv3.tag.endswith('SubParcels'):
